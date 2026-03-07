@@ -436,3 +436,185 @@ for i in l:
         b_type(k[1],imm,k[3],k[2])
     
 
+import sys
+
+#register names
+register_map = {
+    "zero": "00000",
+    "ra": "00001", 
+    "sp": "00010", 
+    "gp": "00011",
+    "tp": "00100", 
+    "t0": "00101", 
+    "t1": "00110", 
+    "t2": "00111",
+    "s0": "01000", 
+    "fp": "01000", 
+    "s1": "01001", 
+    "a0": "01010",
+    "a1": "01011", 
+    "a2": "01100", 
+    "a3": "01101", 
+    "a4": "01110",
+    "a5": "01111", 
+    "a6": "10000", 
+    "a7": "10001", 
+    "s2": "10010",
+    "s3": "10011", 
+    "s4": "10100", 
+    "s5": "10101", 
+    "s6": "10110",
+    "s7": "10111", 
+    "s8": "11000", 
+    "s9": "11001", 
+    "s10": "11010",
+    "s11": "11011", 
+    "t3": "11100", 
+    "t4": "11101", 
+    "t5": "11110",
+    "t6": "11111"
+}
+
+r_funct3 = {
+    "sll": "001", 
+    "xor": "100",
+    "srl": "101", 
+    "or":  "110", 
+    "and": "111"
+}
+
+def r_type(instruction, rd, rs1, rs2, reg_map):     #xor, sll, srl, and, or
+    opcode = "0110011" 
+    funct7 = "0000000" 
+    funct3 = r_funct3[instruction] 
+    rd = reg_map[rd]
+    rs1 = reg_map[rs1]
+    rs2 = reg_map[rs2]
+    
+    return funct7 + rs2 + rs1 + funct3 + rd + opcode
+
+def encode_bne(rs1, rs2, pc_current, label_address, reg_map):
+
+    opcode = "1100011"
+    funct3 = "001"     
+    rs1 = reg_map[rs1]
+    rs2 = reg_map[rs2]
+    offset = label_address - pc_current
+
+    if offset < 0:
+        offset = (1 << 13) + offset 
+        
+    imm = format(offset, '013b')
+    imm_12   = imm[0]      
+    imm_11   = imm[1]      
+    imm_10_5 = imm[2:8]    
+    imm_4_1  = imm[8:12]   
+    part1 = imm_12 + imm_10_5 
+    part2 = imm_4_1 + imm_11  
+    
+    return part1 + rs2 + rs1 + funct3 + part2 + opcode
+
+
+
+def main():
+
+    if len(sys.argv) < 3:
+        print("Error: Missing input or output file paths.")
+        return
+
+    input_file = sys.argv[1]
+    output_file = sys.argv[2]
+
+    try:
+        with open(input_file, 'r') as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        print(f"Error: Could not open {input_file}")
+        return
+
+    label_map = {}
+    pc = 0
+
+    for line in lines:
+        clean_line = line.strip()
+
+        if not clean_line:
+            continue
+        
+        if ':' in clean_line:
+            label_parts = clean_line.split(':')
+            label_name = label_parts[0].strip()
+            label_map[label_name] = pc
+            instruction_part = label_parts[1].strip()
+
+            if instruction_part: 
+                pc += 4 
+        else:
+            pc += 4 
+
+    pc = 0
+    output_binaries = []
+    line_num = 0  
+    
+    for line in lines:
+        line_num += 1  
+        clean_line = line.strip()
+
+        if not clean_line:
+            continue
+            
+        if ':' in clean_line:
+            label_parts = clean_line.split(':')
+            clean_line = label_parts[1].strip()
+
+            if not clean_line: 
+                continue
+            
+        parts = clean_line.replace(',', ' ').split()
+        if not parts:
+            continue
+
+        instruction = parts[0]
+
+        if instruction in ["xor", "sll", "srl", "or", "and"]:
+            try:
+                rd = parts[1]
+                rs1 = parts[2]
+                rs2 = parts[3]
+                binary_str = r_type(instruction, rd, rs1, rs2, register_map)
+                output_binaries.append(binary_str)
+            except Exception:
+                print(f"Error on line {line_num}: Invalid syntax for {instruction}")
+                return 
+                
+        elif instruction == "bne":
+            try:
+                rs1 = parts[1]
+                rs2 = parts[2]
+                label = parts[3]
+                
+                if label not in label_map:
+                    print(f"Error on line {line_num}: Label '{label}' not found.")
+                    return
+                
+                label_address = label_map[label]
+                binary_str = encode_bne(rs1, rs2, pc, label_address, register_map)
+                output_binaries.append(binary_str)
+            except Exception:
+                print(f"Error on line {line_num}: Invalid syntax for bne")
+                return
+
+        else:
+            print(f"Error on line {line_num}: Unrecognized instruction '{instruction}'")
+            return
+
+        pc += 4 
+
+    with open(output_file, 'w') as f:
+        for binary_line in output_binaries:
+            f.write(binary_line + '\n')
+            
+    print("Assembly successful! Check output file.")
+
+if __name__ == "__main__":
+    main()
