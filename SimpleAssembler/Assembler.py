@@ -1,3 +1,74 @@
+import sys
+
+REGISTERS = {
+    "zero": "00000", 
+    "ra": "00001", 
+    "sp": "00010", 
+    "gp": "00011",
+    "tp": "00100", 
+    "t0": "00101", 
+    "t1": "00110", 
+    "t2": "00111",
+    "t3": "11100", 
+    "t4": "11101", 
+    "t5": "11110", 
+    "t6": "11111",     
+    "fp": "01000", 
+    "a0": "01010", 
+    "a1": "01011", 
+    "a2": "01100", 
+    "a3": "01101", 
+    "a4": "01110", 
+    "a5": "01111", 
+    "a6": "10000", 
+    "a7": "10001", 
+    "s0": "01000", 
+    "s1": "01001", 
+    "s2": "10010",
+    "s3": "10011", 
+    "s4": "10100", 
+    "s5": "10101", 
+    "s6": "10110",
+    "s7": "10111", 
+    "s8": "11000", 
+    "s9": "11001", 
+    "s10": "11010",
+    "s11": "11011"
+}
+
+I_TYPE_OPCODES = {
+    "lw":    {"opcode": "0000011", "funct3": "010"},
+    "addi":  {"opcode": "0010011", "funct3": "000"},
+    "sltiu": {"opcode": "0010011", "funct3": "011"},
+    "jalr":  {"opcode": "1100111", "funct3": "000"}
+}
+
+B_TYPE_OPCODES = {
+    "beq":   {"opcode": "1100011", "funct3": "000"},
+    "bne":   {"opcode": "1100011", "funct3": "001"},
+    "blt":   {"opcode": "1100011", "funct3": "100"},
+    "bge":   {"opcode": "1100011", "funct3": "101"}
+}
+
+R_TYPE_FUNCT3 = {
+    "sll": "001", 
+    "xor": "100",
+    "srl": "101", 
+    "or":  "110", 
+    "and": "111"
+}
+
+
+
+def int_to_bin(val, bits):
+    if val < 0:
+        val = 2**bits + val
+    binary = bin(val)
+    binary = binary.replace("0b", "")
+    while len(binary) < bits:
+        binary = "0" + binary
+    return binary
+
 
 def regval(val):
 
@@ -35,7 +106,7 @@ def regval(val):
     elif val == "t6": return 31
 
 
-
+#for add, sub, slt, sltu
 def r_type(ins,rs2,rs1,rd):
 
     x=""
@@ -72,236 +143,11 @@ def r_type(ins,rs2,rs1,rd):
         x+=format(regval(rd),'05b')
         x+="0110011"
 
-    print(x)
+    return x
 
 
-# ---------- BEQ ----------
-def b_type(ins,imm_int,rs2,rs1):
 
-    imm_bin = format(imm_int & 0x1FFF,'013b')
-
-    x=(imm_bin[0]+imm_bin[2:8]+
-       format(regval(rs2),'05b')+
-       format(regval(rs1),'05b')+
-       "000"+
-       imm_bin[8:12]+
-       imm_bin[1]+
-       "1100011")
-
-    print(x)
-
-
-
-def bltu_type(imm_int,rs2,rs1):
-
-    imm_bin=format(imm_int & 0x1FFF,'013b')
-
-    x=(imm_bin[0]+imm_bin[2:8]+
-       format(regval(rs2),'05b')+
-       format(regval(rs1),'05b')+
-       "110"+
-       imm_bin[8:12]+
-       imm_bin[1]+
-       "1100011")
-
-    print(x)
-
-
-
-def bgeu_type(imm_int,rs2,rs1):
-
-    imm_bin=format(imm_int & 0x1FFF,'013b')
-
-    x=(imm_bin[0]+imm_bin[2:8]+
-       format(regval(rs2),'05b')+
-       format(regval(rs1),'05b')+
-       "111"+
-       imm_bin[8:12]+
-       imm_bin[1]+
-       "1100011")
-
-    print(x)
-
-
-
-def lui_type(rd,imm):
-
-    x=format(int(imm),'020b')+format(regval(rd),'05b')+"0110111"
-    print(x)
-
-
-def auipc_type(rd,imm):
-
-    x=format(int(imm),'020b')+format(regval(rd),'05b')+"0010111"
-    print(x)
-
-
-def jal_type(rd,imm):
-
-    imm_bin=format(int(imm),'021b')
-
-    x=(imm_bin[0]+imm_bin[10:20]+imm_bin[9]+imm_bin[1:9]+
-       format(regval(rd),'05b')+"1101111")
-
-    print(x)
-
-
-
-def sw_type(rs2,mem):
-
-    imm,rs1=mem.split("(")
-    rs1=rs1.replace(")","")
-
-    imm_bin=format(int(imm),'012b')
-
-    x=(imm_bin[0:7]+
-       format(regval(rs2),'05b')+
-       format(regval(rs1),'05b')+
-       "010"+
-       imm_bin[7:12]+
-       "0100011")
-
-    print(x)
-
-
-with open("riscv_program.txt") as f:
-    x=f.readlines()
-
-l=[]
-j=0
-
-for i in x:
-    i=i.strip()
-    i=i.replace(","," ")
-    i=i+" "+str(j)
-    j=j+1
-    l.append(i)
-
-
-
-for i in l:
-
-    k=i.split(" ")
-
-    # R TYPE
-    if k[0] in ["add","sub","slt","sltu"]:
-        r_type(k[0],k[3],k[2],k[1])
-
-    # BEQ
-    elif k[0]=="beq":
-
-        if k[3].isdigit():
-            imm=int(k[3])
-
-        else:
-            store=k[3]
-            current_idx=k[4]
-
-            for u in l:
-                z=u.split(" ")
-                if z[0]==store+":":
-                    label_idx=z[5]
-
-            imm=(int(label_idx)-int(current_idx))*4
-
-        b_type(k[0],imm,k[2],k[1])
-
-    # BLTU
-    elif k[0]=="bltu":
-
-        if k[3].isdigit():
-            imm=int(k[3])
-
-        else:
-            store=k[3]
-            current_idx=k[4]
-
-            for u in l:
-                z=u.split(" ")
-                if z[0]==store+":":
-                    label_idx=z[5]
-
-            imm=(int(label_idx)-int(current_idx))*4
-
-        bltu_type(imm,k[2],k[1])
-
-    # BGEU
-    elif k[0]=="bgeu":
-
-        if k[3].isdigit():
-            imm=int(k[3])
-
-        else:
-            store=k[3]
-            current_idx=k[4]
-
-            for u in l:
-                z=u.split(" ")
-                if z[0]==store+":":
-                    label_idx=z[5]
-
-            imm=(int(label_idx)-int(current_idx))*4
-
-        bgeu_type(imm,k[2],k[1])
-
-    # U TYPE
-    elif k[0]=="lui":
-        lui_type(k[1],k[2])
-
-    elif k[0]=="auipc":
-        auipc_type(k[1],k[2])
-
-    # J TYPE
-    elif k[0]=="jal":
-        jal_type(k[1],k[2])
-
-    # S TYPE
-    elif k[0]=="sw":
-        sw_type(k[1],k[2])
-
-REGISTERS = {
-    "zero": "00000", "ra": "00001", "sp": "00010", "gp": "00011",
-    "tp": "00100", "t0": "00101", "t1": "00110", "t2": "00111",
-    "t3": "11100", "t4": "11101", "t5": "11110", "t6": "11111",     
-    "fp": "01000", "a0": "01010", "a1": "01011", "a2": "01100", 
-    "a3": "01101", "a4": "01110", "a5": "01111", "a6": "10000", 
-    "a7": "10001", "s0": "01000", "s1": "01001", "s2": "10010",
-    "s3": "10011", "s4": "10100", "s5": "10101", "s6": "10110",
-    "s7": "10111", "s8": "11000", "s9": "11001", "s10": "11010",
-    "s11": "11011"
-}
-
-I_TYPE_OPCODES = {
-    "lw":    {"opcode": "0000011", "funct3": "010"},
-    "addi":  {"opcode": "0010011", "funct3": "000"},
-    "sltiu": {"opcode": "0010011", "funct3": "011"},
-    "jalr":  {"opcode": "1100111", "funct3": "000"}
-}
-
-B_TYPE_OPCODES = {
-    "beq":   {"opcode": "1100011", "funct3": "000"},
-    "bne":   {"opcode": "1100011", "funct3": "001"},
-    "blt":   {"opcode": "1100011", "funct3": "100"},
-    "bge":   {"opcode": "1100011", "funct3": "101"}
-}
-
-R_TYPE_FUNCT3 = {
-    "sll": "001", 
-    "xor": "100",
-    "srl": "101", 
-    "or":  "110", 
-    "and": "111"
-}
-
-def int_to_bin(val, bits):
-    if val < 0:
-        val = 2**bits + val
-    binary = bin(val)
-    binary = binary.replace("0b", "")
-    while len(binary) < bits:
-        binary = "0" + binary
-    return binary
-
+#for xor, sll, srl, or, and
 def process_r_type(instruction_str):
     parts = instruction_str.split()
     opcode_str = parts[0]
@@ -318,6 +164,8 @@ def process_r_type(instruction_str):
     
     return funct7 + rs2_bin + rs1_bin + funct3 + rd_bin + opcode
 
+
+#for "lw", "addi", "sltiu", "jalr" instructions
 def process_i_type(instruction_str):
     parts = instruction_str.split()
     opcode_1 = parts[0]
@@ -341,6 +189,8 @@ def process_i_type(instruction_str):
 
     return imm_bin + rs1_bin + funct3 + rd_bin + opcode
 
+
+#for "beq", "bne", "blt", "bge" instructions
 def process_b_type(instruction, imm):
     parts = instruction.split() 
     opcode_2 = parts[0]
@@ -366,217 +216,220 @@ def process_b_type(instruction, imm):
     return part1 + rs2_bin + rs1_bin + funct3 + part2 + opcode
 
 
-print("RISC-V ASSEMBLER")
+#for bltu
+def bltu_type(imm_int,rs2,rs1):
 
-with open("riscv_program1.txt") as f:
-    x = f.readlines()
+    imm_bin=format(imm_int & 0x1FFF,'013b')
 
-instruction_list = []
+    x=(imm_bin[0]+imm_bin[2:8]+
+       format(regval(rs2),'05b')+
+       format(regval(rs1),'05b')+
+       "110"+
+       imm_bin[8:12]+
+       imm_bin[1]+
+       "1100011")
 
-idx = 0 
-for i in x:
-    if not i.strip(): 
-        continue
-    i = i.strip()
-    i = i.replace(","," ")
-    i = i+" "+str(idx)
-    idx = idx+1
-    instruction_list.append(i)
+    return x
 
-for instruction in instruction_list:
-    decoded = instruction.split()
-    
-    if decoded[0].endswith(":"):
-        clean_instruction = instruction.split(":", 1)[1].strip()
-        decoded = clean_instruction.split()
-    else:
-        clean_instruction = instruction
 
-    if not decoded:
-        continue
+#for bgeu
+def bgeu_type(imm_int,rs2,rs1):
 
-    opcode = decoded[0]
-    
-    if opcode in ["lw", "addi", "sltiu", "jalr"]:
-        binary_result = process_i_type(clean_instruction)
-        print(binary_result)
+    imm_bin=format(imm_int & 0x1FFF,'013b')
 
-    elif opcode in ["xor", "sll", "srl", "or", "and"]:
-        binary_result = process_r_type(clean_instruction)
-        print(binary_result)
+    x=(imm_bin[0]+imm_bin[2:8]+
+       format(regval(rs2),'05b')+
+       format(regval(rs1),'05b')+
+       "111"+
+       imm_bin[8:12]+
+       imm_bin[1]+
+       "1100011")
 
-    elif opcode in ["bge", "blt", "bne", "beq"]:
-        store = decoded[3]
-        current_idx = decoded[-1]
+    return x
 
-        if store.lstrip('-').isdigit():
-            imm = int(store)
-        else:
-            for i in instruction_list:
-                p = i.split()
-                if p[0] == store + ":":
-                    label_idx = p[-1] 
-                    break 
-            imm = (int(label_idx) - int(current_idx)) * 4
+#lui
+def lui_type(rd,imm):
+    x=format(int(imm) & 0xFFFFF,'020b') + format(regval(rd),'05b')+"0110111"
+    return x
+
+#auipc
+def auipc_type(rd,imm):
+    x=format(int(imm) & 0xFFFFF,'020b') + format(regval(rd),'05b')+"0010111"
+    return x
+
+#jal
+def jal_type(rd,imm):
+    imm_bin=format(int(imm) & 0x1FFFFF,'021b')
+    x=(imm_bin[0] + imm_bin[10:20] + imm_bin[9] + imm_bin[1:9] + format(regval(rd),'05b')+"1101111")
+    return x
+
+#sw
+def sw_type(rs2,mem):
+    imm,rs1=mem.split("(")
+    rs1=rs1.replace(")","")
+    imm_bin=format(int(imm) & 0xFFF,'012b')
+    x=(imm_bin[0:7] + format(regval(rs2),'05b') + format(regval(rs1),'05b')+"010" + imm_bin[7:12]+"0100011")
+    return x
+
+
+#main fnc
+if len(sys.argv) >= 3:
+        input_file = sys.argv[1]
+        output_file = sys.argv[2]
         
-        bit_value = process_b_type(clean_instruction, imm)
-        print(bit_value)
+        with open(input_file, "r") as f:
+            x = f.readlines()
+
+        instruction_list = []
+        output_binaries = []
 
 
+        idx = 0 
+        for i in x:
+            if not i.strip(): 
+                continue
+            i = i.strip()
+            i = i.replace(","," ")
+            i = i+" "+str(idx)
+            idx = idx+1
+            instruction_list.append(i)
 
 
+        if not instruction_list:
+            print("Error: Empty input file")
+            sys.exit()
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        last_line = instruction_list[-1].split()
+        halt_check = last_line[:-1] 
     
+        if halt_check != ["beq", "zero", "zero", "0"] and halt_check != ["beq", "zero", "zero", "0x00000000"]:
+            print("Virtual halt missing instruction") 
+            sys.exit()
 
 
+        for instruction in instruction_list:
+            decoded = instruction.split()
 
+            original_line_num = int(decoded[-1]) + 1 
 
+            
+            if decoded[0].endswith(":"):
+                clean_instruction = instruction.split(":", 1)[1].strip()
+                decoded = clean_instruction.split()
+            else:
+                clean_instruction = instruction
 
+            if not decoded:
+                continue
 
+            opcode = decoded[0]
+            
 
+            try:
+                if opcode in ["lw", "addi", "sltiu", "jalr"]:
 
+                    binary_result = process_i_type(clean_instruction)
+                    output_binaries.append(binary_result)
+                    
+                elif opcode in ["xor", "sll", "srl", "or", "and"]:
 
+                    binary_result = process_r_type(clean_instruction)
+                    output_binaries.append(binary_result)
 
+                elif opcode in ["add", "sub", "slt", "sltu"]:
 
+                    binary_result = r_type(opcode, decoded[3], decoded[2], decoded[1])
+                    output_binaries.append(binary_result)
 
+                elif opcode in ["bge", "blt", "bne", "beq", "bltu", "bgeu"]:
 
+                    store = decoded[3]
+                    current_idx = decoded[-1]
 
+                    if store.lstrip('-').isdigit():
+                        imm = int(store)
 
+                    else:
+                        l = -1  
+                        for i in instruction_list:
+                            p = i.split()
+                            if p[0] == store + ":":
+                                l = p[-1] 
+                                break 
+                                
+                        if l == -1: 
 
+                            print(f"Error on line {original_line_num}: Undefined label '{store}'")
+                            sys.exit()
+                            
+                        imm = (int(l) - int(current_idx)) * 4
+                    
+                    if opcode in ["bge", "blt", "bne", "beq"]:
 
+                        bit_value = process_b_type(clean_instruction, imm)
+                        output_binaries.append(bit_value)
 
+                    elif opcode == "bltu":
 
+                        bit_value = bltu_type(imm, decoded[2], decoded[1])
+                        output_binaries.append(bit_value)
 
+                    elif opcode == "bgeu":
 
+                        bit_value = bgeu_type(imm, decoded[2], decoded[1])
+                        output_binaries.append(bit_value)
+                        
+                elif opcode == "sw":
 
+                    binary_result = sw_type(decoded[1], decoded[2])
+                    output_binaries.append(binary_result)
 
+                elif opcode == "lui":
 
+                    binary_result = lui_type(decoded[1], decoded[2])
+                    output_binaries.append(binary_result)
 
+                elif opcode == "auipc":
 
+                    binary_result = auipc_type(decoded[1], decoded[2])
+                    output_binaries.append(binary_result)
 
+                elif opcode == "jal":
 
+                    store = decoded[2]
+                    current_idx = decoded[-1]
 
+                    if store.lstrip('-').isdigit():
+                        imm = int(store)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+                    else:
+                        l = -1  
+                        for i in instruction_list:
+                            p = i.split()
+                            if p[0] == store + ":":
+                                l = p[-1] 
+                                break 
+                                
+                        if l == -1: 
+                            print(f"Error on line {original_line_num}: Undefined label '{store}'")
+                            sys.exit()
+                            
+                        imm = (int(l) - int(current_idx)) * 4
+                    
+                    binary_result = jal_type(decoded[1], imm)
+                    output_binaries.append(binary_result)
+
+                else: 
+                    print(f"Error on line {original_line_num}: Invalid Instruction '{opcode}'")
+                    sys.exit()
+
+            except KeyError as e: 
+                print(f"Error on line {original_line_num}: Invalid Register {e}")
+                sys.exit()  
+            except Exception:
+                print(f"Error on line {original_line_num}: Invalid Syntax")
+                sys.exit()
+
+        with open(output_file, "w") as f:
+            for line in output_binaries:
+                f.write(line + "\n")
