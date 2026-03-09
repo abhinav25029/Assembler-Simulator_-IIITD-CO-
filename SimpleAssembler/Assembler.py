@@ -300,14 +300,23 @@ if len(sys.argv) >= 3:
             sys.exit()
 
         
+         
         last_line = instruction_list[-1].split()
         halt_check = last_line[:-1] 
         
-       
+         
         if halt_check[0].endswith(":"):
             halt_check = halt_check[1:]
     
-        if halt_check != ["beq", "zero", "zero", "0"] and halt_check != ["beq", "zero", "zero", "0x00000000"]:
+        
+        valid_halts = [
+            ["beq", "zero", "zero", "0"],
+            ["beq", "zero", "zero", "0x00000000"],
+            ["beq", "zero", "zero", "end"]
+        ]
+
+        # Check if the final instruction is in the allowed list
+        if halt_check not in valid_halts:
             print("Virtual halt missing instruction") 
             sys.exit()
 
@@ -438,7 +447,3 @@ if len(sys.argv) >= 3:
         with open(output_file, "w") as f:
             for line in output_binaries:
                 f.write(line + "\n")
-
-
-
-        
