@@ -597,3 +597,212 @@ with open(sys.argv[2], 'w', newline='\n') as out:
                 reg[rd]=lv
 
             pc = pc + 4
+
+        elif operation=="sw":
+            rs2 =t[1]
+
+            rs1= t[2]
+            imm = t[3]
+            
+            addr =reg[rs1]+imm
+
+            masked_addr= addr & 0xFFFFFFFF
+            
+            if data_mem(masked_addr)==False:
+                ln =pc//4
+                print("Error: Invalid memory access at line "+str(ln))
+
+
+                sys.exit(0)
+                
+            value_to_store =reg[rs2]
+
+            mem_write(masked_addr,value_to_store)
+            pc =pc+4
+
+        elif operation=="beq":
+            rs1= t[1]
+
+            rs2= t[2]
+
+            imm =t[3]
+            if reg[rs1]==reg[rs2]:
+                jump_addr =pc+imm
+
+                pc = jump_addr & 0xFFFFFFFF
+            else:
+                pc =pc+4
+
+        elif operation=="bne":
+            rs1= t[1]
+            rs2 =t[2]
+
+            imm =t[3]
+
+            if reg[rs1]!= reg[rs2]:
+                jump_addr= pc +imm
+                pc =jump_addr & 0xFFFFFFFF
+
+
+            else:
+                pc= pc+4
+
+        elif operation=="blt":
+            rs1= t[1]
+            rs2= t[2]
+
+            imm= t[3]
+
+            signed_rs1=sign32(reg[rs1])
+            signed_rs2= sign32(reg[rs2])
+
+            if signed_rs1<signed_rs2:
+                jump_addr =pc+imm
+
+                pc=jump_addr & 0xFFFFFFFF
+            else:
+                pc =pc+4
+
+        elif operation =="bge":
+            rs1 =t[1]
+            rs2 =t[2]
+
+            imm =t[3]
+
+            signed_rs1=sign32(reg[rs1])
+            signed_rs2=sign32(reg[rs2])
+            if signed_rs1>=signed_rs2:
+
+                jump_addr = pc + imm
+
+                pc = jump_addr & 0xFFFFFFFF
+
+            else:
+
+                pc = pc+4
+
+        elif operation=="bltu":
+            rs1 = t[1]
+
+            rs2 = t[2]
+
+            imm = t[3]
+
+            unsigned_rs1=reg[rs1] & 0xFFFFFFFF
+            unsigned_rs2=reg[rs2] & 0xFFFFFFFF
+
+            if unsigned_rs1<unsigned_rs2:
+                jump_addr=pc+imm
+
+                pc =jump_addr & 0xFFFFFFFF
+            else:
+
+                pc = pc + 4
+
+        elif operation== "bgeu":
+            rs1 =t[1]
+
+            rs2= t[2]
+            imm =t[3]
+
+            unsigned_rs1 =reg[rs1] & 0xFFFFFFFF
+
+            unsigned_rs2= reg[rs2] & 0xFFFFFFFF
+            if unsigned_rs1>=unsigned_rs2:
+
+                jump_addr =pc+imm
+
+                pc =jump_addr & 0xFFFFFFFF
+            else:
+
+
+                pc=pc+ 4
+
+        elif operation=="lui":
+            rd= t[1]
+
+            imm =t[2]
+            if rd!=0:
+
+                reg[rd]=imm & 0xFFFFFFFF
+
+            pc =pc+4
+
+        elif operation=="auipc":
+
+
+            rd =t[1]
+
+            imm =t[2]
+            if rd != 0:
+
+                result=pc +imm
+                reg[rd]=result & 0xFFFFFFFF
+
+            pc =pc+4
+
+        elif operation=="jal":
+            rd= t[1]
+
+            imm =t[2]
+
+            if rd!=0:
+                return_addr =pc+4
+                reg[rd] =return_addr
+
+            jump_addr =pc+imm
+
+            pc =jump_addr & 0xFFFFFFFF
+
+        elif operation=="jalr":
+            rd = t[1]
+            rs1 =t[2]
+            imm =t[3]
+            
+            target_addr =reg[rs1]+imm
+            
+
+            next_pc=target_addr & ~1   
+            
+            if rd!= 0:
+
+                return_addr =pc + 4
+
+                reg[rd]=return_addr
+                
+            pc =next_pc & 0xFFFFFFFF
+
+        
+        reg[0]=0
+
+        
+        trace_str="0b"+format(pc,'032b')
+
+        for r in reg:
+
+
+            trace_str=trace_str+" 0b"+format(r & 0xFFFFFFFF,'032b')
+            
+
+        out.write(trace_str+"\n")
+
+    
+    crt_adr=0x00010000
+
+    end_address=0x00010080
+    
+    while crt_adr<end_address:
+
+        if crt_adr in data:
+
+            value=data[crt_adr]
+
+        else:
+
+            value=0
+            
+        hex_string=format(crt_adr,'08X')
+        binary_string=format(value, '032b')
+
+        out.write("0x"+hex_string+":0b"+binary_string+"\n")
+        crt_adr=crt_adr+4
