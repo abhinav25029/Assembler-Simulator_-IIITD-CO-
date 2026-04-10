@@ -201,3 +201,191 @@ def decode(ins):
         
         elif f3 =="111":
             return("bgeu",rs1,rs2,imm)
+        
+
+
+
+
+    #jal
+
+    elif op=="1101111":   
+
+        bit_20=get_bits(ins,    31,31)
+
+        bits_19_12=get_bits(ins,19,12)
+
+        bit_11= get_bits(ins,20,                          20)
+        bits_10_1 =get_bits(ins, 30,  21)
+
+        imm_string=  bit_20+bits_19_12+bit_11+bits_10_1+"0"
+        imm=signed(imm_string)
+
+
+        return("jal",rd,imm)
+
+
+    #jalr
+
+
+    elif op== "1100111":
+
+        imm_string  =get_bits(ins,31, 20)
+
+        imm =signed(imm_string)
+
+        if f3=="000":
+            return("jalr",rd,rs1,imm)
+
+
+    #lui
+
+    elif op =="0110111":
+
+        imm_string= get_bits(ins,31, 12) + "000000000000"
+
+        imm= signed(imm_string)
+        return("lui",rd,imm)
+
+
+    #auipc
+
+
+    elif op== "0010111":
+
+        imm_string= get_bits(ins,31,12) + "000000000000"
+
+        imm =signed(imm_string)
+
+        return("auipc",rd,imm)
+        
+    return None
+
+
+
+#memory read 
+
+
+def mem_read(addr):
+
+    if addr>=0x00010000 and addr<0x00010080:
+
+        if addr in data:
+
+            return data[addr]
+        
+        else:
+
+            return 0
+            
+    elif addr >=0x00000100 and addr< 0x00000180:
+
+        if addr in stack:
+
+            return stack[addr]
+        
+        else:
+            return 0
+            
+    return 0
+
+
+
+#writing to memory
+
+
+def mem_write(addr, val):
+
+
+    if addr>=0x00010000 and addr<0x00010080:
+
+        data[addr] =val & 0xFFFFFFFF
+
+        
+
+    elif addr>=0x00000100 and addr<0x00000180:
+
+        stack[addr]=val & 0xFFFFFFFF
+
+
+
+# some safe arguments to prevent crashes
+
+if len(sys.argv)<3:
+
+    print("Usage: python Simulator.py <input> <output>")
+
+    sys.exit(1)
+
+
+
+# loading instructions
+
+
+instructions = []
+
+try:
+
+    with open(sys.argv[1],'r') as f:
+
+        for line in f:
+
+            clean_line = line.strip()
+
+            if clean_line != "":
+
+                instructions.append(clean_line)
+
+
+
+except Exception as e:
+
+    print("Error reading file:"+str(e))
+
+    sys.exit(1)
+
+
+
+HALT = "00000000000000000000000001100011"
+pc = 0
+
+
+
+with open(sys.argv[2], 'w', newline='\n') as out:
+
+    while True:
+
+
+       
+        no_ins =len(instructions)
+        idx_fetch =pc // 4
+        
+        if pc%4 !=0 or pc <0 or idx_fetch>=no_ins:
+
+
+            print("Error: Invalid memory access or PC out of bounds at line " + str(idx_fetch))
+            sys.exit(0)  
+
+
+
+        ins=instructions[idx_fetch]
+        t =decode(ins)
+
+
+        if t is None:
+
+            print("Error: Invalid instruction at line "+str(idx_fetch))
+
+            sys.exit(0)
+
+
+        # check for HALT 
+
+        if ins==HALT:
+
+            trace_str ="0b" + format(pc, '032b')
+            for r in reg:
+                trace_str=trace_str +" 0b"+format(r & 0xFFFFFFFF, '032b')
+            
+            out.write(trace_str +"\n")
+
+            break
