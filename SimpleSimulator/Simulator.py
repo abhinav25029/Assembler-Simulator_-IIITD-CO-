@@ -26,7 +26,7 @@ def get_bits(ins,hi,lo):
     return ins[start_idx:end_idx]
 
 #this func is used to convert bin. str. to signed no. 
-def to_signed(b):
+def signed(b):
     n=int(b,2)
     length_of_b=len(b)
 
@@ -129,7 +129,7 @@ def decode(ins):
     elif op=="0010011":
 
         imm_string=get_bits(ins,31,20)
-        imm=to_signed(imm_string)
+        imm=signed(imm_string)
 
 
         if f3=="000":
@@ -145,7 +145,7 @@ def decode(ins):
 
         imm_string=get_bits(ins,31,20)
 
-        imm=to_signed(imm_string)
+        imm=signed(imm_string)
 
 
 
@@ -163,7 +163,7 @@ def decode(ins):
 
         imm_string=part1+part2
 
-        imm=to_signed(imm_string)
+        imm=signed(imm_string)
 
         if f3=="010":
             return ("sw",rs2,rs1,imm)
@@ -181,7 +181,7 @@ def decode(ins):
         bits_4_1=get_bits(ins,11,8)
 
         imm_string=bit_12 + bit_11+bits_10_5+bits_4_1 + "0"
-        imm=to_signed(imm_string)
+        imm=signed(imm_string)
         
         if f3=="000":
             return("beq",rs1,rs2,imm)
@@ -201,6 +201,3 @@ def decode(ins):
         
         elif f3 =="111":
             return("bgeu",rs1,rs2,imm)
-
-
-
