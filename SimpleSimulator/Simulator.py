@@ -389,3 +389,211 @@ with open(sys.argv[2], 'w', newline='\n') as out:
             out.write(trace_str +"\n")
 
             break
+
+        
+        operation=t[0]
+
+
+
+        if operation=="add":
+
+            rd =t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+            if rd!= 0:
+                result =reg[rs1]+reg[rs2]
+                reg[rd] =result & 0xFFFFFFFF
+
+
+            pc=pc + 4
+
+        elif operation=="sub":
+
+            rd =t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+            if rd!=0:
+
+                result=reg[rs1]-reg[rs2]
+                reg[rd]=result & 0xFFFFFFFF
+
+            pc=pc +4
+
+
+
+        elif operation=="sll":
+
+            rd=t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+
+            if rd!=0:
+
+                shift_amt=reg[rs2] & 0x1F
+                result =reg[rs1] <<shift_amt
+                reg[rd] =result & 0xFFFFFFFF
+
+            pc =pc+4
+
+
+
+        elif operation=="slt":
+
+            rd=t[1]
+            rs1=t[2]
+            rs2= t[3]
+
+            if rd!=0:
+
+                signed_rs1=sign32(reg[rs1])
+                signed_rs2=sign32(reg[rs2])
+
+
+                if signed_rs1<signed_rs2:
+                    reg[rd] = 1
+
+
+                else:
+                    reg[rd] = 0
+
+
+            pc = pc + 4
+
+
+
+        elif operation=="sltu":
+
+            rd=t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+
+            if rd!=0:
+
+
+                unsigned_rs1=reg[rs1] & 0xFFFFFFFF
+                unsigned_rs2=reg[rs2] & 0xFFFFFFFF
+
+                if unsigned_rs1<unsigned_rs2:
+                    reg[rd]=1
+
+                else:
+                    reg[rd]=0
+
+            pc = pc + 4
+
+
+
+        elif operation=="xor":
+            rd=t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+            if rd!=0:
+                result= reg[rs1] ^reg[rs2]
+                reg[rd]=result & 0xFFFFFFFF
+
+            pc = pc + 4
+
+        elif operation =="srl":
+
+            rd=t[1]
+            rs1=t[2]
+            rs2=t[3]
+
+
+            if rd!=0:
+
+                unsigned_rs1=reg[rs1] & 0xFFFFFFFF
+                shift_amt=reg[rs2] & 0x1F
+
+                result =unsigned_rs1>> shift_amt
+
+                reg[rd]=result
+
+
+            pc = pc + 4
+
+
+
+        elif operation=="or":
+            rd=t[1]
+            rs1=t[2]
+
+            rs2=t[3]
+
+            if rd!= 0:
+
+                result = reg[rs1] | reg[rs2]
+
+                reg[rd] = result & 0xFFFFFFFF
+            pc =pc+4
+
+        elif operation=="and":
+            rd = t[1]
+
+            rs1 = t[2]
+            rs2 = t[3]
+            if rd!= 0:
+
+                result=reg[rs1] & reg[rs2]
+
+                reg[rd] =result & 0xFFFFFFFF
+
+            pc =pc+4
+
+        elif operation=="addi":
+            rd =t[1]
+
+            rs1 = t[2]
+            imm= t[3]
+
+            if rd!= 0:
+                result =reg[rs1]+imm
+
+                reg[rd]=result & 0xFFFFFFFF
+            pc =pc+4
+
+        elif operation=="sltiu":
+            rd =t[1]
+            rs1 =t[2]
+
+            imm =t[3]
+
+            if rd != 0:
+                unsigned_rs1 =reg[rs1] & 0xFFFFFFFF
+
+                unsigned_imm =imm & 0xFFFFFFFF
+
+                if unsigned_rs1<unsigned_imm:
+                    reg[rd] =1
+                else:
+
+                    reg[rd] =0
+            pc =pc+4
+
+        elif operation =="lw":
+            rd = t[1]
+
+            rs1 = t[2]
+            imm = t[3]
+            
+            addr = reg[rs1]+imm
+            masked_addr = addr&0xFFFFFFFF
+            
+            if data_mem (masked_addr)==False:
+                ln =pc//4
+
+                print("Error: Invalid memory access at line "+str(ln))
+
+                sys.exit(0)
+                
+            if rd!=0:
+
+                lv= mem_read(masked_addr)
+                reg[rd]=lv
+
+            pc = pc + 4
